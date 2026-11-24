@@ -1,0 +1,6 @@
+{
+  "name": "Night ’26 Shell — Shop the Look",
+  "description": "Six looks, styled head to toe. Tap a pin to see the piece.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
