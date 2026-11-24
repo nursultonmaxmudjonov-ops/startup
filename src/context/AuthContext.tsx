@@ -19,7 +19,8 @@ export interface User {
   joinedAt: string;
   avatar?: string;
   sizePreference?: string;
-  authProvider?: 'password' | 'google' | 'telegram' | 'demo';
+  authProvider?: 'password' | 'google' | 'telegram' | 'demo' | 'phone';
+  phone?: string;
 }
 
 export interface OrderItem {
@@ -59,15 +60,16 @@ interface AuthContextType {
   isAdmin: boolean;
   orders: UserOrder[];
   isAuthModalOpen: boolean;
-  authModalMode: 'login' | 'register';
+  authModalMode: 'login' | 'register' | 'phone';
   isOrdersModalOpen: boolean;
   isSupabaseConnected: boolean;
   supabaseUrl: string;
-  openAuthModal: (mode?: 'login' | 'register') => void;
+  openAuthModal: (mode?: 'login' | 'register' | 'phone') => void;
   closeAuthModal: () => void;
   openOrdersModal: () => void;
   closeOrdersModal: () => void;
   login: (email: string, pass: string) => { success: boolean; error?: string };
+  loginWithPhone: (data: { phone: string; name: string; city?: string; size?: string }) => { success: boolean; user: User };
   loginWithGoogle: () => Promise<{ success: boolean; error?: string }>;
   loginWithTelegram: (customTgUser?: TelegramUserData) => Promise<{ success: boolean; error?: string }>;
   register: (data: { name: string; email: string; pass: string; city: string; size?: string }) => { success: boolean; error?: string };
@@ -178,7 +180,7 @@ const AuthContext = createContext<AuthContextType>({
   isAdmin: false,
   orders: INITIAL_ORDERS,
   isAuthModalOpen: false,
-  authModalMode: 'login',
+  authModalMode: 'phone',
   isOrdersModalOpen: false,
   isSupabaseConnected: false,
   supabaseUrl: '',
@@ -187,6 +189,7 @@ const AuthContext = createContext<AuthContextType>({
   openOrdersModal: () => undefined,
   closeOrdersModal: () => undefined,
   login: () => ({ success: false }),
+  loginWithPhone: () => ({ success: false, user: DEFAULT_USER }),
   loginWithGoogle: async () => ({ success: false }),
   loginWithTelegram: async () => ({ success: false }),
   register: () => ({ success: false }),
@@ -201,7 +204,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [orders, setOrders] = useState<UserOrder[]>(INITIAL_ORDERS);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [authModalMode, setAuthModalMode] = useState<'login' | 'register'>('login');
+  const [authModalMode, setAuthModalMode] = useState<'login' | 'register' | 'phone'>('phone');
   const [isOrdersModalOpen, setIsOrdersModalOpen] = useState(false);
   const [supabaseConnected, setSupabaseConnected] = useState(false);
   const [currentSupabaseUrl, setCurrentSupabaseUrl] = useState('');
@@ -303,7 +306,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  const openAuthModal = (mode: 'login' | 'register' = 'login') => {
+  const openAuthModal = (mode: 'login' | 'register' | 'phone' = 'phone') => {
     setAuthModalMode(mode);
     setIsAuthModalOpen(true);
   };
@@ -311,6 +314,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const closeAuthModal = () => setIsAuthModalOpen(false);
   const openOrdersModal = () => setIsOrdersModalOpen(true);
   const closeOrdersModal = () => setIsOrdersModalOpen(false);
+
+  // Telefon orqali SMS tasdiqlash bilan kirish/ro'yxatdan o'tish
+  const loginWithPhone = (data: { phone: string; name: string; city?: string; size?: string }) => {
+    const cleanPhone = data.phone.trim();
+    const cleanName = data.name.trim();
+    const cleanCity = data.city || 'Tashkent';
+    const cleanSize = data.size || 'M';
+    const cleanEmail = `${cleanPhone.replace(/\D/g, '')}@phone.vantegewear.com`;
+
+    const newUser: User = {
+      id: `usr_ph_${Date.now()}`,
+      name: cleanName,
+      email: cleanEmail,
+      phone: cleanPhone,
+      role: 'user',
+      city: cleanCity,
+      tier: 'VANTEGE CLUB MEMBER · VERIFIED PHONE',
+      joinedAt: new Date().toISOString().slice(0, 10),
+      sizePreference: cleanSize,
+      authProvider: 'phone',
+    };
+
+    saveStoredAccount(cleanEmail, newUser, 'phone_sms_verified');
+    setUser(newUser);
+    try {
+      localStorage.setItem('vantegewear_user', JSON.stringify(newUser));
+    } catch {}
+    setIsAuthModalOpen(false);
+    return { success: true, user: newUser };
+  };
 
   // Email va parol orqali kirish (Demo admin yoki ro'yxatdan o'tgan foydalanuvchi)
   const login = (email: string, pass: string) => {
@@ -651,6 +684,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         openOrdersModal,
         closeOrdersModal,
         login,
+        loginWithPhone,
         loginWithGoogle,
         loginWithTelegram,
         register,

@@ -71,12 +71,13 @@ export default function CheckoutModal({
   const [cardCvv, setCardCvv] = useState('');
   const [errors, setErrors] = useState<Errors>({});
   const [processing, setProcessing] = useState(false);
-  const [done, setDone] = useState<{ orderId: string; cardLast4: string } | null>(null);
+  const [done, setDone] = useState<{ orderId: string; cardLast4: string; tgUrl: string } | null>(null);
 
   useEffect(() => {
     if (open) {
       setName(user?.name || '');
-      setAddress(user ? `${user.city}, ` : '');
+      setPhone(user?.phone || '+998 ');
+      setAddress(user?.city ? `${user.city}, ` : '');
       setErrors({});
       setProcessing(false);
       setDone(null);
@@ -210,26 +211,53 @@ export default function CheckoutModal({
     return Object.keys(e).length === 0;
   };
 
-  const handleSubmit = (ev: React.FormEvent) => {
+  const handleSubmit = async (ev: React.FormEvent) => {
     ev.preventDefault();
     if (!validate()) return;
 
     setProcessing(true);
-    window.setTimeout(() => {
-      const orderItems = items.map((it) => ({
-        id: it.key,
-        name: it.name,
-        price: it.price,
-        size: user?.sizePreference || 'L',
-        quantity: 1,
-      }));
-      const addr = `${address.trim()} · ${phone.trim()}`;
-      const ord = addOrder(orderItems, total, addr);
-      const last4 = cardNumber.replace(/\D/g, '').slice(-4);
-      setProcessing(false);
-      setDone({ orderId: ord.id, cardLast4: last4 });
-      onComplete({ name: name.trim(), phone: phone.trim(), address: address.trim(), cardLast4: last4, orderId: ord.id });
-    }, 1600);
+    const orderItems = items.map((it) => ({
+      id: it.key,
+      name: it.name,
+      lookName: it.lookName,
+      price: it.price,
+      size: user?.sizePreference || 'L',
+      quantity: 1,
+    }));
+    const addr = `${address.trim()} · ${phone.trim()}`;
+    const ord = addOrder(orderItems, total, addr);
+    const last4 = cardNumber.replace(/\D/g, '').slice(-4);
+    const tgUrl = `https://t.me/night_market_26_bot?start=order_${ord.id}`;
+
+    // Send order to Telegram Bot backend API
+    try {
+      await fetch('/api/telegram-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: ord.id,
+          name: name.trim(),
+          phone: phone.trim(),
+          address: address.trim(),
+          cardLast4: last4,
+          total,
+          items: orderItems,
+        }),
+      });
+    } catch (err) {
+      console.warn('Telegram notification failed:', err);
+    }
+
+    setProcessing(false);
+    setDone({ orderId: ord.id, cardLast4: last4, tgUrl });
+    onComplete({ name: name.trim(), phone: phone.trim(), address: address.trim(), cardLast4: last4, orderId: ord.id });
+
+    // Open Telegram Bot directly
+    try {
+      window.open(tgUrl, '_blank');
+    } catch {
+      // User can click button in success view if popup was blocked
+    }
   };
 
   const handleCloseAfterSuccess = () => {
@@ -286,12 +314,25 @@ export default function CheckoutModal({
             </div>
             <p className="checkout-success-note">
               {language === 'uz'
-                ? 'Concierge jamoasi tez orada siz bilan bog‘lanadi. Buyurtmalaringiz «Buyurtmalarim» bo‘limida saqlanadi.'
+                ? 'Buyurtmangiz rasmiylashtirildi va Telegram botimizga yuborildi! Buyurtma holatini kuzatish uchun Telegram botga o‘ting.'
                 : language === 'ru'
-                ? 'Консьерж свяжется с вами в ближайшее время. Заказ доступен в разделе «Мои заказы».'
-                : 'Our concierge will reach out shortly. The order is saved under “My Orders”.'}
+                ? 'Ваш заказ оформлен и отправлен в Telegram-бот! Перейдите в Telegram-бот для отслеживания.'
+                : 'Your order has been confirmed and sent to our Telegram bot! Head to Telegram to track status.'}
             </p>
-            <button type="button" className="checkout-submit" onClick={handleCloseAfterSuccess}>
+
+            <a
+              href={done.tgUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="telegram-bot-checkout-btn"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.75-.55 2.92-1.27 4.86-2.11 5.83-2.52 2.77-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .39z"/>
+              </svg>
+              <span>{language === 'uz' ? '✈️ Telegram Botga o‘tish (@night_market_26_bot)' : '✈️ Open Telegram Bot'}</span>
+            </a>
+
+            <button type="button" className="checkout-submit" style={{ marginTop: '10px' }} onClick={handleCloseAfterSuccess}>
               {texts.closeBtn}
             </button>
           </div>

@@ -9,6 +9,7 @@ import HandCameraControl from '@/src/components/HandCameraControl';
 import AuthModal from '@/src/components/AuthModal';
 import UserOrdersModal from '@/src/components/UserOrdersModal';
 import { LOOKS } from '@/src/data/looks';
+import { useAuth } from '@/src/context/AuthContext';
 
 interface ShellLayoutProps {
   children: React.ReactNode;
@@ -29,6 +30,22 @@ export default function ShellLayout({
   const [bagOpen, setBagOpen] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
   const [toastOn, setToastOn] = useState(false);
+  const { user, openAuthModal } = useAuth();
+
+  // Boshida kirishda: Loading tugagach, agar ro'yxatdan o'tmagan bo'lsa telefon orqali ro'yxatdan o'tishni so'rash
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      try {
+        const saved = localStorage.getItem('vantegewear_user');
+        if (!saved && !user) {
+          openAuthModal('phone');
+        }
+      } catch {
+        if (!user) openAuthModal('phone');
+      }
+    }, 2100);
+    return () => window.clearTimeout(timer);
+  }, [user, openAuthModal]);
 
   const bagBtnRef = useRef<HTMLButtonElement | null>(null);
   const toastTimerRef = useRef<number | null>(null);

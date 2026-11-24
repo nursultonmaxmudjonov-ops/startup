@@ -21,8 +21,8 @@ const SOCIALS: Array<{ label: string; href: string; icon: React.ReactNode }> = [
     ),
   },
   {
-    label: 'Telegram',
-    href: 'https://telegram.org',
+    label: 'Telegram (@night_market_26_bot)',
+    href: 'https://t.me/night_market_26_bot',
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
         <path d="M21.5 4.5 2.8 11.7c-.9.35-.85 1.6.08 1.9l4.7 1.5 1.8 5.4c.3.85 1.4.95 1.9.2l2.5-3.6 4.9 3.6c.8.55 1.9.1 2.1-.85l3-13.4c.2-1-.7-1.85-1.68-1.5Z" />

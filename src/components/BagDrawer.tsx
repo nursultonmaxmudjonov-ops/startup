@@ -49,8 +49,8 @@ export default function BagDrawer({
     }
 
     if (!user) {
-      onShowToast(language === 'uz' ? 'Buyurtma berish uchun tizimga kiring' : 'Please sign in to complete checkout');
-      openAuthModal('login');
+      onShowToast(language === 'uz' ? 'Buyurtma berish uchun telefon raqamingiz bilan ro‘yxatdan o‘ting' : 'Please sign in with your phone to complete checkout');
+      openAuthModal('phone');
       return;
     }
 
