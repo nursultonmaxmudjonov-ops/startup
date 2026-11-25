@@ -1,2 +1,5 @@
+# VANTEGE WEAR — Telegram Bot
+# Python 3.12 talab qilinadi
+
 python-telegram-bot>=21.0
 aiohttp>=3.9
