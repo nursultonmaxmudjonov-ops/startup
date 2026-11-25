@@ -2891,8 +2891,8 @@ a {
 @media (min-width: 821px) {
   .hand-ctl {
     bottom: 16px;
-    left: 16px;
-    right: auto;
+    right: 16px;
+    left: auto;
   }
 
   .hand-panel {

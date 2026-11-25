@@ -68,11 +68,16 @@ interface AuthContextType {
   closeAuthModal: () => void;
   openOrdersModal: () => void;
   closeOrdersModal: () => void;
+  openSettingsModal: () => void;
+  closeSettingsModal: () => void;
+  isSettingsModalOpen: boolean;
   login: (email: string, pass: string) => { success: boolean; error?: string };
   loginWithPhone: (data: { phone: string; name: string; city?: string; size?: string }) => { success: boolean; user: User };
   loginWithGoogle: () => Promise<{ success: boolean; error?: string }>;
   loginWithTelegram: (customTgUser?: TelegramUserData) => Promise<{ success: boolean; error?: string }>;
   register: (data: { name: string; email: string; pass: string; city: string; size?: string }) => { success: boolean; error?: string };
+  updateProfile: (data: { name?: string; city?: string; sizePreference?: string; phone?: string }) => { success: boolean; error?: string };
+  changePassword: (currentPass: string, newPass: string) => { success: boolean; error?: string };
   logout: () => Promise<void>;
   updateSupabaseCredentials: (url: string, anonKey: string) => boolean;
   resetSupabaseCredentials: () => void;
@@ -182,17 +187,22 @@ const AuthContext = createContext<AuthContextType>({
   isAuthModalOpen: false,
   authModalMode: 'phone',
   isOrdersModalOpen: false,
+  isSettingsModalOpen: false,
   isSupabaseConnected: false,
   supabaseUrl: '',
   openAuthModal: () => undefined,
   closeAuthModal: () => undefined,
   openOrdersModal: () => undefined,
   closeOrdersModal: () => undefined,
+  openSettingsModal: () => undefined,
+  closeSettingsModal: () => undefined,
   login: () => ({ success: false }),
   loginWithPhone: () => ({ success: false, user: DEFAULT_USER }),
   loginWithGoogle: async () => ({ success: false }),
   loginWithTelegram: async () => ({ success: false }),
   register: () => ({ success: false }),
+  updateProfile: () => ({ success: false }),
+  changePassword: () => ({ success: false }),
   logout: async () => undefined,
   updateSupabaseCredentials: () => false,
   resetSupabaseCredentials: () => undefined,
@@ -206,6 +216,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authModalMode, setAuthModalMode] = useState<'login' | 'register' | 'phone'>('phone');
   const [isOrdersModalOpen, setIsOrdersModalOpen] = useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [supabaseConnected, setSupabaseConnected] = useState(false);
   const [currentSupabaseUrl, setCurrentSupabaseUrl] = useState('');
 
@@ -314,6 +325,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const closeAuthModal = () => setIsAuthModalOpen(false);
   const openOrdersModal = () => setIsOrdersModalOpen(true);
   const closeOrdersModal = () => setIsOrdersModalOpen(false);
+  const openSettingsModal = () => setIsSettingsModalOpen(true);
+  const closeSettingsModal = () => setIsSettingsModalOpen(false);
 
   // Telefon orqali SMS tasdiqlash bilan kirish/ro'yxatdan o'tish
   const loginWithPhone = (data: { phone: string; name: string; city?: string; size?: string }) => {
@@ -608,6 +621,49 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return { success: true };
   };
 
+  // Profilni yangilash (ism, shahar, olcham, telefon)
+  const updateProfile = (data: { name?: string; city?: string; sizePreference?: string; phone?: string }): { success: boolean; error?: string } => {
+    if (!user) return { success: false, error: 'Avval tizimga kiring' };
+    const updated: User = {
+      ...user,
+      ...(data.name !== undefined ? { name: data.name.trim() } : {}),
+      ...(data.city !== undefined ? { city: data.city } : {}),
+      ...(data.sizePreference !== undefined ? { sizePreference: data.sizePreference } : {}),
+      ...(data.phone !== undefined ? { phone: data.phone } : {}),
+    };
+    setUser(updated);
+    try {
+      localStorage.setItem('vantegewear_user', JSON.stringify(updated));
+      // Saqlangan hisobdagi profilni ham yangilash
+      const accounts = getStoredAccounts();
+      const key = user.email.toLowerCase();
+      if (accounts[key]) {
+        accounts[key].user = updated;
+        localStorage.setItem(USERS_DB_KEY, JSON.stringify(accounts));
+      }
+    } catch {}
+    return { success: true };
+  };
+
+  // Parolni ozgartirish
+  const changePassword = (currentPass: string, newPass: string): { success: boolean; error?: string } => {
+    if (!user) return { success: false, error: 'Avval tizimga kiring' };
+    if (newPass.length < 6) return { success: false, error: 'Yangi parol kamida 6 belgidan iborat bo‘lishi kerak' };
+    try {
+      const accounts = getStoredAccounts();
+      const key = user.email.toLowerCase();
+      const entry = accounts[key];
+      if (entry && entry.pass && entry.pass !== currentPass) {
+        return { success: false, error: 'Hozirgi parol notogri' };
+      }
+      if (entry) {
+        entry.pass = newPass;
+        localStorage.setItem(USERS_DB_KEY, JSON.stringify(accounts));
+      }
+    } catch {}
+    return { success: true };
+  };
+
   const logout = async () => {
     const client = getSupabaseClient();
     if (client) {
@@ -683,11 +739,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         closeAuthModal,
         openOrdersModal,
         closeOrdersModal,
+        openSettingsModal,
+        closeSettingsModal,
+        isSettingsModalOpen,
         login,
         loginWithPhone,
         loginWithGoogle,
         loginWithTelegram,
         register,
+        updateProfile,
+        changePassword,
         logout,
         updateSupabaseCredentials,
         resetSupabaseCredentials,

@@ -8,6 +8,7 @@ import TickerStrip from '@/src/components/TickerStrip';
 import HandCameraControl from '@/src/components/HandCameraControl';
 import AuthModal from '@/src/components/AuthModal';
 import UserOrdersModal from '@/src/components/UserOrdersModal';
+import AccountSettingsModal from '@/src/components/AccountSettingsModal';
 import { LOOKS } from '@/src/data/looks';
 import { useAuth } from '@/src/context/AuthContext';
 
@@ -32,8 +33,9 @@ export default function ShellLayout({
   const [toastOn, setToastOn] = useState(false);
   const { user, openAuthModal } = useAuth();
 
-  // Boshida kirishda: Loading tugagach, agar ro'yxatdan o'tmagan bo'lsa telefon orqali ro'yxatdan o'tishni so'rash
+  // Faqat bosh sahifada: agar ro'yxatdan o'tmagan bo'lsa telefon orqali ro'yxatdan o'tishni so'rash
   useEffect(() => {
+    if (activeSection !== 'stage') return;
     const timer = window.setTimeout(() => {
       try {
         const saved = localStorage.getItem('vantegewear_user');
@@ -45,7 +47,7 @@ export default function ShellLayout({
       }
     }, 2100);
     return () => window.clearTimeout(timer);
-  }, [user, openAuthModal]);
+  }, [user, openAuthModal, activeSection]);
 
   const bagBtnRef = useRef<HTMLButtonElement | null>(null);
   const toastTimerRef = useRef<number | null>(null);
@@ -160,6 +162,7 @@ export default function ShellLayout({
 
       <AuthModal onShowToast={showToast} />
       <UserOrdersModal />
+      <AccountSettingsModal onShowToast={showToast} />
 
       <div id="toast" className={toastOn ? 'on' : ''} role="status" aria-live="polite">
         {toastMsg}

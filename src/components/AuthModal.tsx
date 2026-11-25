@@ -17,8 +17,6 @@ export default function AuthModal({ onShowToast }: AuthModalProps) {
     supabaseUrl,
     login,
     loginWithPhone,
-    loginWithGoogle,
-    loginWithTelegram,
     register,
     updateSupabaseCredentials,
   } = useAuth();
@@ -29,7 +27,7 @@ export default function AuthModal({ onShowToast }: AuthModalProps) {
 
   // Phone registration steps: 'phone' | 'code' | 'profile'
   const [phoneStep, setPhoneStep] = useState<'phone' | 'code' | 'profile'>('phone');
-  const [phoneNumber, setPhoneNumber] = useState('+998 ');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [smsCode, setSmsCode] = useState('');
   const [generatedCode, setGeneratedCode] = useState('');
   const [simulatedIncomingSms, setSimulatedIncomingSms] = useState<string | null>(null);
@@ -46,8 +44,6 @@ export default function AuthModal({ onShowToast }: AuthModalProps) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [loadingGoogle, setLoadingGoogle] = useState(false);
-  const [loadingTelegram, setLoadingTelegram] = useState(false);
 
   // Supabase settings panel
   const [showSupabaseSettings, setShowSupabaseSettings] = useState(false);
@@ -63,8 +59,6 @@ export default function AuthModal({ onShowToast }: AuthModalProps) {
       setError('');
       setSmsCode('');
       setSimulatedIncomingSms(null);
-      setLoadingGoogle(false);
-      setLoadingTelegram(false);
       setShowSupabaseSettings(false);
       setSbSaveMsg('');
     }
@@ -88,15 +82,11 @@ export default function AuthModal({ onShowToast }: AuthModalProps) {
 
   if (!isAuthModalOpen) return null;
 
-  // Format phone number nicely as user types: +998 (90) 123-45-67
+  // Format phone number nicely as user types: (90) 123-45-67 (prefix +998 shown separately)
   const handlePhoneChange = (val: string) => {
-    let raw = val.replace(/[^\d+]/g, '');
-    if (!raw.startsWith('+998')) {
-      raw = '+998' + raw.replace(/^\+?998?/, '');
-    }
-    const digits = raw.replace(/\D/g, '').slice(3); // after 998
-    let formatted = '+998';
-    if (digits.length > 0) formatted += ' (' + digits.slice(0, 2);
+    const digits = val.replace(/\D/g, '').replace(/^998/, '').slice(0, 9);
+    let formatted = '';
+    if (digits.length > 0) formatted = '(' + digits.slice(0, 2);
     if (digits.length >= 2) formatted += ') ' + digits.slice(2, 5);
     if (digits.length >= 5) formatted += '-' + digits.slice(5, 7);
     if (digits.length >= 7) formatted += '-' + digits.slice(7, 9);
@@ -107,7 +97,7 @@ export default function AuthModal({ onShowToast }: AuthModalProps) {
   const handleSendCode = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    const rawDigits = phoneNumber.replace(/\D/g, '');
+    const rawDigits = '998' + phoneNumber.replace(/\D/g, '');
     if (rawDigits.length < 12) {
       setError(uz ? 'Iltimos, to‘liq telefon raqamingizni kiriting (+998 ...)' : 'Please enter a valid phone number');
       return;
@@ -188,37 +178,6 @@ export default function AuthModal({ onShowToast }: AuthModalProps) {
       onShowToast(t.toastRegistered);
     } else {
       setError(res.error || 'Ro‘yxatdan o‘tishda xatolik yuz berdi');
-    }
-  };
-
-  const handleGoogleLogin = async () => {
-    setError('');
-    setLoadingGoogle(true);
-    try {
-      const res = await loginWithGoogle();
-      if (res.success) {
-        onShowToast('Google orqali kirdingiz!');
-      } else {
-        setError(res.error || 'Google orqali kirishda xatolik');
-        if (!isSupabaseConnected) setShowSupabaseSettings(true);
-      }
-    } finally {
-      setLoadingGoogle(false);
-    }
-  };
-
-  const handleTelegramLogin = async () => {
-    setError('');
-    setLoadingTelegram(true);
-    try {
-      const res = await loginWithTelegram();
-      if (res.success) {
-        onShowToast('Telegram orqali kirdingiz!');
-      } else {
-        setError(res.error || 'Telegram orqali kirishda xatolik');
-      }
-    } finally {
-      setLoadingTelegram(false);
     }
   };
 
@@ -307,15 +266,28 @@ export default function AuthModal({ onShowToast }: AuthModalProps) {
               <form onSubmit={handleSendCode} className="auth-form">
                 <div className="auth-field">
                   <label style={{ fontSize: '12px', color: '#cbd5e1' }}>Telefon raqamingiz:</label>
-                  <input
-                    type="tel"
-                    required
-                    autoFocus
-                    placeholder="+998 (90) 123-45-67"
-                    value={phoneNumber}
-                    onChange={(e) => handlePhoneChange(e.target.value)}
-                    style={{ fontSize: '16px', letterSpacing: '0.05em', fontWeight: 600 }}
-                  />
+                  <div
+                    className="phone-prefix-wrap"
+                    onClick={() => {
+                      // focus input and set caret at end
+                      const el = document.getElementById('phone-input') as HTMLInputElement | null;
+                      if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); }
+                    }}
+                  >
+                    <span className="phone-prefix">+998</span>
+                    <input
+                      id="phone-input"
+                      type="tel"
+                      required
+                      autoFocus
+                      inputMode="numeric"
+                      autoComplete="tel-national"
+                      placeholder="(90) 123-45-67"
+                      value={phoneNumber}
+                      onChange={(e) => handlePhoneChange(e.target.value)}
+                      style={{ fontSize: '16px', letterSpacing: '0.05em', fontWeight: 600, border: 'none', background: 'transparent', color: '#f1f5f9', outline: 'none', flex: 1, minWidth: 0, padding: 0, caretColor: '#60a5fa' }}
+                    />
+                  </div>
                   <span style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>
                     O‘zbekiston, Qozog‘iston yoki xalqaro formatda kiritishingiz mumkin.
                   </span>
@@ -323,6 +295,13 @@ export default function AuthModal({ onShowToast }: AuthModalProps) {
 
                 <button type="submit" className="primary-cta" style={{ width: '100%', marginTop: '8px' }}>
                   <span>SMS KOD OLISH ➔</span>
+                </button>
+                <button
+                  type="button"
+                  className="auth-switch-alt"
+                  onClick={() => setMode('login')}
+                >
+                  Email va parol orqali kirish
                 </button>
               </form>
             )}
@@ -344,7 +323,7 @@ export default function AuthModal({ onShowToast }: AuthModalProps) {
 
                 <div className="auth-field" style={{ textAlign: 'center' }}>
                   <label style={{ fontSize: '12px', color: '#cbd5e1' }}>
-                    <strong>{phoneNumber}</strong> raqamiga yuborilgan 4 xonali kod:
+                    <strong>+998 {phoneNumber}</strong> raqamiga yuborilgan 4 xonali kod:
                   </label>
                   <div className="sms-code-inputs-row">
                     <input
@@ -402,14 +381,18 @@ export default function AuthModal({ onShowToast }: AuthModalProps) {
               <form onSubmit={handleCompleteProfile} className="auth-form">
                 <div className="auth-field">
                   <label style={{ fontSize: '12px', color: '#cbd5e1' }}>Ism va Familiyangiz:</label>
-                  <input
-                    type="text"
-                    required
-                    autoFocus
-                    placeholder="Masalan: Jasur Alimov"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                  />
+                  <div className="name-input-wrap">
+                    <span className="name-input-icon">👤</span>
+                    <input
+                      type="text"
+                      required
+                      autoFocus
+                      autoComplete="name"
+                      placeholder="Masalan: Jasur Alimov"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                    />
+                  </div>
                 </div>
 
                 <div className="auth-grid-2">
@@ -528,43 +511,13 @@ export default function AuthModal({ onShowToast }: AuthModalProps) {
           </div>
         )}
 
-        {/* Social / Fast OAuth Buttons (Google + Telegram) */}
+        {/* Mode switcher + Demo Admin */}
         <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-          <div className="auth-social-grid" style={{ marginBottom: '12px' }}>
-            <button
-              type="button"
-              className="auth-google-btn"
-              onClick={handleGoogleLogin}
-              disabled={loadingGoogle}
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24">
-                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
-                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
-              </svg>
-              <span>{loadingGoogle ? 'Ulanmoqda...' : 'Google'}</span>
-            </button>
-
-            <button
-              type="button"
-              className="auth-telegram-btn"
-              onClick={handleTelegramLogin}
-              disabled={loadingTelegram}
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.75-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z" />
-              </svg>
-              <span>{loadingTelegram ? 'Ulanmoqda...' : 'Telegram'}</span>
-            </button>
-          </div>
-
-          {/* Alternate mode switcher */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px', color: '#94a3b8' }}>
             <button
               type="button"
               onClick={() => setMode(mode === 'phone' ? 'login' : 'phone')}
-              style={{ background: 'none', border: 'none', color: '#60a5fa', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}
+              className="auth-switch-alt"
             >
               {mode === 'phone' ? 'Email va parol orqali kirish' : '📱 Telefon raqam orqali kirish'}
             </button>

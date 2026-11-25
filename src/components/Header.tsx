@@ -10,7 +10,6 @@ export type HeaderSectionId =
   | 'network'
   | 'stores'
   | 'journal'
-  | 'catalog'
   | 'admin'
   | 'faq';
 
@@ -30,7 +29,7 @@ export default function Header({
   onOpenBag,
 }: HeaderProps) {
   const { language, setLanguage, t } = useLanguage();
-  const { user, isAdmin, openAuthModal, openOrdersModal } = useAuth();
+  const { user, isAdmin, openAuthModal, openOrdersModal, openSettingsModal } = useAuth();
   const [langMenuOpen, setLangMenuOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const langRef = React.useRef<HTMLDivElement | null>(null);
@@ -65,7 +64,6 @@ export default function Header({
   const NAV: Array<{ id: HeaderSectionId; href: string; label: string }> = [
     { id: 'stage', href: '/', label: t.navRunway },
     { id: 'studio', href: '/fitting', label: t.navFitting },
-    { id: 'catalog', href: '/catalog', label: t.navCatalog },
     { id: 'network', href: '/network', label: t.navNetwork },
     { id: 'stores', href: '/stores', label: t.navStores },
     { id: 'journal', href: '/journal', label: t.navJournal },
@@ -173,7 +171,7 @@ export default function Header({
             <button
               type="button"
               className="user-profile-btn"
-              onClick={openOrdersModal}
+              onClick={openSettingsModal}
               title={`${user.name} (${user.email})`}
             >
               <span className="user-avatar-circle">
