@@ -2306,6 +2306,83 @@ a {
   opacity: .75;
 }
 
+/* --- PWA install (footer) --- */
+.ft-install-zone {
+  display: flex;
+  align-items: center;
+}
+
+.ft-install-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 18px;
+  border: 1px solid #ffffff2b;
+  border-radius: 999px;
+  background: linear-gradient(120deg, #ffffff12, #ffffff05 60%);
+  color: var(--ink, #fff);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: .02em;
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform .25s, border-color .25s, box-shadow .25s, background-color .25s;
+}
+
+.ft-install-btn:hover {
+  transform: translateY(-2px);
+  border-color: #ffffff55;
+  box-shadow: 0 10px 30px -12px rgba(255, 255, 255, .35);
+}
+
+.ft-install-btn:active {
+  transform: translateY(0);
+}
+
+.ft-install-glow {
+  position: absolute;
+  inset: -40% -20%;
+  background: radial-gradient(circle at 30% 50%, rgba(255,255,255,.18), transparent 55%);
+  pointer-events: none;
+  animation: ft-install-sweep 3.2s ease-in-out infinite;
+}
+
+@keyframes ft-install-sweep {
+  0%, 100% { transform: translateX(-30%); opacity: .5; }
+  50%      { transform: translateX(30%);  opacity: 1; }
+}
+
+.ft-install-label {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.25;
+}
+
+.ft-install-label small {
+  font-size: 10px;
+  font-weight: 400;
+  opacity: .65;
+  letter-spacing: .03em;
+}
+
+.ft-install-done {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1px dashed #2fbf6f55;
+  border-radius: 999px;
+  color: #5be49b;
+  font-size: 12px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ft-install-glow { animation: none; }
+  .ft-install-btn { transition: none; }
+}
+
 #bagBackdrop {
   -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);

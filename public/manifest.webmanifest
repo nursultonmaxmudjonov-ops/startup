@@ -1,0 +1,44 @@
+{
+  "name": "VANTEGE WEAR Shell",
+  "short_name": "VANTEGE",
+  "description": "Six looks, styled head to toe. Nanotech outerwear startup archive.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#050505",
+  "theme_color": "#050505",
+  "lang": "uz",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/icons/screenshot-wide.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "VANTEGE WEAR desktop view"
+    },
+    {
+      "src": "/icons/screenshot-narrow.png",
+      "sizes": "720x1280",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "VANTEGE WEAR mobile view"
+    }
+  ],
+  "categories": ["shopping", "lifestyle"]
+}

@@ -1,8 +1,49 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { Download } from 'lucide-react';
 import { useReveal } from '@/src/components/useReveal';
 import { useLanguage, type Language } from '@/src/context/LanguageContext';
+
+type BeforeInstallPromptEvent = Event & {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+};
+
+/** PWA o'rnatish tugmasi (footer uchun). Chrome/Edge Android & desktop da prompt chiqaradi. */
+export function usePwaInstall() {
+  const [prompt, setPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [installed, setInstalled] = useState(false);
+
+  useEffect(() => {
+    // To'g'ridan-to'g'ri eshitamiz — InstallPrompt tomonidan tozalangan bo'lsa ham ishlaydi
+    const onPrompt = (e: Event) => {
+      e.preventDefault();
+      setPrompt(e as BeforeInstallPromptEvent);
+      setInstalled(false);
+    };
+    const onInstalled = () => {
+      setInstalled(true);
+      setPrompt(null);
+    };
+    window.addEventListener('beforeinstallprompt', onPrompt);
+    window.addEventListener('appinstalled', onInstalled);
+    return () => {
+      window.removeEventListener('beforeinstallprompt', onPrompt);
+      window.removeEventListener('appinstalled', onInstalled);
+    };
+  }, []);
+
+  const install = async () => {
+    if (!prompt) return;
+    await prompt.prompt();
+    const { outcome } = await prompt.userChoice;
+    if (outcome === 'accepted') setInstalled(true);
+    setPrompt(null);
+  };
+
+  return { canInstall: !!prompt && !installed, installed, install };
+}
 
 interface FooterProps {
   onShowToast: (msg: string) => void;
@@ -55,6 +96,7 @@ const SOCIALS: Array<{ label: string; href: string; icon: React.ReactNode }> = [
 export default function Footer({ onShowToast }: FooterProps) {
   const rootRef = useReveal<HTMLElement>();
   const { language, setLanguage, t } = useLanguage();
+  const { canInstall, installed, install } = usePwaInstall();
 
   const handleLang = (lng: Language) => {
     setLanguage(lng);
@@ -158,6 +200,55 @@ export default function Footer({ onShowToast }: FooterProps) {
       </div>
 
       <div className="ft-bottom">
+        <div className="ft-install-zone">
+          {!installed && (
+            <button
+              type="button"
+              className="ft-install-btn"
+              onClick={() => {
+                if (canInstall) {
+                  install();
+                } else {
+                  // Brauzer prompt bermasa (masalan Safari iOS) — qo'lda ko'rsatma
+                  onShowToast(
+                    language === 'uz'
+                      ? 'Brauzer menyusidan “Sahifaga qo‘shish” / “Add to Home Screen” tanlang'
+                      : language === 'ru'
+                      ? 'В меню браузера выберите «На экран Домой» / «Add to Home Screen»'
+                      : 'Use your browser menu → “Add to Home Screen” to install the app'
+                  );
+                }
+              }}
+            >
+              <span className="ft-install-glow" aria-hidden="true" />
+              <Download size={16} />
+              <span className="ft-install-label">
+                {language === 'uz'
+                  ? 'Ilovani yuklab olish'
+                  : language === 'ru'
+                  ? 'Скачать приложение'
+                  : 'Download app'}
+                <small>
+                  {language === 'uz'
+                    ? 'Telefon va noutbukga — 1 klikda'
+                    : language === 'ru'
+                    ? 'На телефон и ноутбук — в 1 клик'
+                    : 'Phone & laptop — one click'}
+                </small>
+              </span>
+            </button>
+          )}
+          {installed && (
+            <span className="ft-install-done">
+              ✓
+              {language === 'uz'
+                ? 'Ilova o‘rnatilgan'
+                : language === 'ru'
+                ? 'Приложение установлено'
+                : 'App installed'}
+            </span>
+          )}
+        </div>
         <span>© 2026 VANTEGE WEAR Shell Archive LLC. All rights reserved.</span>
         <span className="ft-dim">HexaWeave™ Membrane · SonicWelding™ · Spatial Fitting AI v2.6</span>
       </div>
